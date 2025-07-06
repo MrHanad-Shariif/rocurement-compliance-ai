@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Summary</h3>
+  <ul>
+    <li>Total PRs: {{ total_prs }}</li>
+    <li>Pending PRs: {{ pending_prs }}</li>
+    <li>Approved PRs: {{ approved_prs }}</li>
+  </ul>
+{% endblock %}

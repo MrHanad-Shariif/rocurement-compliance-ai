@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Purchase Requisitions</h3>
+  <table border="1" width="100%">
+    <tr>
+      <th>ID</th>
+      <th>Legal Entity</th>
+      <th>Item Type</th>
+      <th>Description</th>
+      <th>Quantity</th>
+      <th>Actions</th>
+    </tr>
+    {% for pr in prs %}
+    <tr>
+      <td>{{ pr.id }}</td>
+      <td>{{ pr.legal_entity_id }}</td>
+      <td>{{ pr.item_type }}</td>
+      <td>{{ pr.description }}</td>
+      <td>{{ pr.quantity }}</td>
+      <td><a href="/generate_rfq/{{ pr.id }}">Generate PDF</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

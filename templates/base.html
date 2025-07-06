@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title if title else 'Procurement Compliance AI' }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>🚀 Compliance AI</h2>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/pr_form">New PR</a>
+    <a href="/pr_table">View PRs</a>
+    <a href="/logout">Logout</a>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>{{ title if title else 'Dashboard' }}</h1>
+    </div>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

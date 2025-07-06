@@ -1,6 +1,24 @@
+# Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+
+# Virtualenv
+venv/
+
+# DB / data
+*.db
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated files
+private_pdfs/
+static/*.pdf
+
+# Env / secrets (if you have)
 .env
-/static/*.pdf
