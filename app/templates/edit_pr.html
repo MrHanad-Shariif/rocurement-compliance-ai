@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card" style="max-width:500px;margin:auto;">
+    <h2>Edit Purchase Requisition</h2>
+    <form method="post" action="">
+      <label>Legal Entity ID</label>
+      <input type="number" name="legal_entity_id" value="{{ pr[1] if pr[1] is defined else pr.legal_entity_id }}" required>
+      <label>Item Type</label>
+      <select name="item_type" required>
+        <option value="Laptop" {% if (pr[2] if pr[2] is defined else pr.item_type) == 'Laptop' %}selected{% endif %}>Laptop</option>
+        <option value="Chair" {% if (pr[2] if pr[2] is defined else pr.item_type) == 'Chair' %}selected{% endif %}>Chair</option>
+        <option value="Printer" {% if (pr[2] if pr[2] is defined else pr.item_type) == 'Printer' %}selected{% endif %}>Printer</option>
+      </select>
+      <label>Description</label>
+      <input type="text" name="description" value="{{ pr[3] if pr[3] is defined else pr.description }}" required>
+      <label>Quantity</label>
+      <input type="number" name="quantity" value="{{ pr[4] if pr[4] is defined else pr.quantity }}" min="1" required>
+      <button type="submit" style="width:100%;margin-top:16px;">Save Changes</button>
+    </form>
+    <div style="text-align:center;margin-top:18px;">
+      <a href="/pr_table" class="expand-btn">← Back to PR Table</a>
+    </div>
+  </div>
+{% endblock %} 

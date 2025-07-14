@@ -1,0 +1,222 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1e40af;
+  --accent: #10b981;
+  --background: #f3f6fb;
+  --card-bg: #fff;
+  --sidebar-bg: #1e293b;
+  --sidebar-active: #2563eb;
+  --text-main: #222;
+  --text-light: #64748b;
+  --error: #ef4444;
+  --success: #22c55e;
+  --border-radius: 12px;
+  --shadow: 0 4px 24px rgba(30,41,59,0.08);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--background);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  position: fixed;
+  height: 100vh;
+  background: var(--sidebar-bg);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 32px;
+  box-shadow: 2px 0 12px rgba(30,41,59,0.04);
+}
+.sidebar h2 {
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+}
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 90%;
+  padding: 12px 20px;
+  color: #fff;
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  margin-bottom: 8px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.sidebar a:hover, .sidebar a.active {
+  background: var(--sidebar-active);
+}
+
+.main {
+  margin-left: 250px;
+  padding: 40px 5vw 40px 5vw;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.header {
+  background: var(--card-bg);
+  padding: 24px 32px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.content {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  min-height: 400px;
+}
+
+.card, .login-box {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 32px 40px;
+  max-width: 400px;
+  margin: 40px auto;
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 0;
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0 20px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--border-radius);
+  background: #f8fafc;
+  transition: border 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid var(--primary);
+  outline: none;
+}
+button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 12px 0;
+  width: 100%;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+}
+button:hover {
+  background: var(--primary-dark);
+}
+
+.error, .result {
+  padding: 14px 18px;
+  border-radius: var(--border-radius);
+  margin-bottom: 18px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.error {
+  background: #fee2e2;
+  color: var(--error);
+  border: 1px solid #fecaca;
+}
+.result {
+  background: #dcfce7;
+  color: var(--success);
+  border: 1px solid #bbf7d0;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+th, td {
+  padding: 14px 16px;
+  text-align: left;
+}
+th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+tr:nth-child(even) {
+  background: #f1f5f9;
+}
+tr:hover {
+  background: #e0e7ef;
+}
+
+@media (max-width: 900px) {
+  .sidebar { width: 60px; }
+  .sidebar h2, .sidebar a span { display: none; }
+  .main { margin-left: 60px; padding: 24px 2vw; }
+  .header, .content { padding: 18px; }
+}
+@media (max-width: 600px) {
+  .main { margin-left: 0; padding: 8px; }
+  .sidebar { display: none; }
+  .header, .content, .card, .login-box { padding: 12px; }
+}
+
+/* Style for DataTable */
+#prTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+#prTable th, #prTable td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+#prTable th {
+  background-color: #f2f2f2;
+}
+
+#prTable tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+#prTable tr:hover {
+  background-color: #f1f1f1;
+}
+

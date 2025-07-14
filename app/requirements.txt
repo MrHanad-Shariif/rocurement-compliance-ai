@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+fpdf
+spacy
+psycopg2-binary
+passlib[bcrypt]
+python-dotenv

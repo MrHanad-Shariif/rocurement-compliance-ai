@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Welcome Section -->
+<div class="row">
+  <div class="col-12">
+    <div class="card bg-primary text-white mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="text-white mb-1">Welcome back, {{ username }}! 👋</h4>
+            <p class="text-white-50 mb-0">Here's what's happening with your procurement compliance system today.</p>
+          </div>
+          <div class="text-end">
+                          <div class="d-flex align-items-center">
+                <i class="bx bx-calendar-check bx-lg me-2"></i>
+                <div>
+                  <small class="text-white-50">Last Updated</small>
+                  <div class="fw-semibold" id="current-date"></div>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row">
+  <div class="col-lg-3 col-md-6 col-12 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div class="card-info">
+            <p class="card-text">Total PRs</p>
+            <div class="d-flex align-items-end mt-2">
+              <h4 class="text-primary mb-0 me-2">{{ total_prs }}</h4>
+              <small class="text-success">
+                <i class="bx bx-trending-up"></i> +12%
+              </small>
+            </div>
+          </div>
+          <div class="card-icon">
+            <span class="badge bg-primary-subtle text-primary rounded p-3">
+              <i class="bx bx-list-ul bx-sm"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-3 col-md-6 col-12 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div class="card-info">
+            <p class="card-text">Pending PRs</p>
+            <div class="d-flex align-items-end mt-2">
+              <h4 class="text-warning mb-0 me-2">{{ pending_prs }}</h4>
+              <small class="text-warning">
+                <i class="bx bx-time"></i> Needs attention
+              </small>
+            </div>
+          </div>
+          <div class="card-icon">
+            <span class="badge bg-warning-subtle text-warning rounded p-3">
+              <i class="bx bx-time-five bx-sm"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-3 col-md-6 col-12 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div class="card-info">
+            <p class="card-text">Approved PRs</p>
+            <div class="d-flex align-items-end mt-2">
+              <h4 class="text-success mb-0 me-2">{{ approved_prs }}</h4>
+              <small class="text-success">
+                <i class="bx bx-check-circle"></i> +8%
+              </small>
+            </div>
+          </div>
+          <div class="card-icon">
+            <span class="badge bg-success-subtle text-success rounded p-3">
+              <i class="bx bx-check-circle bx-sm"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-3 col-md-6 col-12 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div class="card-info">
+            <p class="card-text">Compliance Rate</p>
+            <div class="d-flex align-items-end mt-2">
+              <h4 class="text-info mb-0 me-2">{{ "%.1f"|format((approved_prs / total_prs * 100) if total_prs > 0 else 0) }}%</h4>
+              <small class="text-info">
+                <i class="bx bx-trending-up"></i> +5%
+              </small>
+            </div>
+          </div>
+          <div class="card-icon">
+            <span class="badge bg-info-subtle text-info rounded p-3">
+              <i class="bx bx-shield-check bx-sm"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+  <div class="col-lg-8 col-12 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">PR Status Overview</h5>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bx bx-dots-vertical-rounded"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="bx bx-refresh me-2"></i>Refresh</a></li>
+            <li><a class="dropdown-item" href="#"><i class="bx bx-download me-2"></i>Export</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="statusChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4 col-12 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Item Types</h5>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bx bx-dots-vertical-rounded"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="bx bx-refresh me-2"></i>Refresh</a></li>
+            <li><a class="dropdown-item" href="#"><i class="bx bx-download me-2"></i>Export</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="itemTypeChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions & Recent Activity -->
+<div class="row">
+  <div class="col-lg-4 col-12 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Quick Actions</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="/pr_table" class="btn btn-primary">
+            <i class="bx bx-plus-circle me-2"></i>Create New PR
+          </a>
+          <a href="/vendors" class="btn btn-outline-primary">
+            <i class="bx bx-store me-2"></i>Manage Vendors
+          </a>
+          <a href="/users" class="btn btn-outline-secondary">
+            <i class="bx bx-user me-2"></i>User Management
+          </a>
+          <button class="btn btn-outline-info" onclick="generateReport()">
+            <i class="bx bx-file me-2"></i>Generate Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-8 col-12 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Recent Activity</h5>
+        <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-marker bg-success"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">PR #{{ total_prs }} Approved</h6>
+              <p class="text-muted mb-0">Laptop procurement request has been approved</p>
+              <small class="text-muted">2 hours ago</small>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker bg-warning"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">New PR Submitted</h6>
+              <p class="text-muted mb-0">Office chair requisition requires review</p>
+              <small class="text-muted">4 hours ago</small>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker bg-info"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">Vendor Added</h6>
+              <p class="text-muted mb-0">New vendor "TechCorp Solutions" registered</p>
+              <small class="text-muted">1 day ago</small>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker bg-primary"></div>
+            <div class="timeline-content">
+              <h6 class="mb-1">System Update</h6>
+              <p class="text-muted mb-0">Compliance rules updated for Q4 2024</p>
+              <small class="text-muted">2 days ago</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Performance Metrics</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3 col-6 mb-3">
+            <div class="text-center">
+              <div class="display-6 text-primary mb-1">{{ "%.1f"|format((approved_prs / total_prs * 100) if total_prs > 0 else 0) }}%</div>
+              <div class="text-muted">Approval Rate</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6 mb-3">
+            <div class="text-center">
+              <div class="display-6 text-warning mb-1">{{ "%.1f"|format((pending_prs / total_prs * 100) if total_prs > 0 else 0) }}%</div>
+              <div class="text-muted">Pending Rate</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6 mb-3">
+            <div class="text-center">
+              <div class="display-6 text-success mb-1">{{ total_prs }}</div>
+              <div class="text-muted">Total Requests</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6 mb-3">
+            <div class="text-center">
+              <div class="display-6 text-info mb-1">24h</div>
+              <div class="text-muted">Avg. Response Time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Enhanced Bar Chart for PR Status
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Pending', 'Approved', 'Rejected'],
+    datasets: [{
+      label: 'Number of PRs',
+      data: [{{ pending_prs }}, {{ approved_prs }}, {{ total_prs - pending_prs - approved_prs }}],
+      backgroundColor: [
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(239, 68, 68, 0.8)'
+      ],
+      borderColor: [
+        'rgba(255, 193, 7, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(239, 68, 68, 1)'
+      ],
+      borderWidth: 2,
+      borderRadius: 8,
+      maxBarThickness: 50
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#696cff',
+        borderWidth: 1,
+        cornerRadius: 8
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: '#697a8d',
+          font: {
+            size: 12
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(105, 122, 141, 0.1)'
+        },
+        ticks: {
+          color: '#697a8d',
+          font: {
+            size: 12
+          }
+        }
+      }
+    }
+  }
+});
+
+// Enhanced Pie Chart for Item Types
+const itemTypeCtx = document.getElementById('itemTypeChart').getContext('2d');
+const itemTypeLabels = {{ item_type_counts.keys()|list|tojson }};
+const itemTypeData = {{ item_type_counts.values()|list|tojson }};
+new Chart(itemTypeCtx, {
+  type: 'doughnut',
+  data: {
+    labels: itemTypeLabels,
+    datasets: [{
+      data: itemTypeData,
+      backgroundColor: [
+        'rgba(37, 99, 235, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 66, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(251, 191, 36, 0.8)',
+        'rgba(20, 184, 166, 0.8)',
+        'rgba(162, 28, 175, 0.8)'
+      ],
+      borderColor: [
+        'rgba(37, 99, 235, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 66, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(99, 102, 241, 1)',
+        'rgba(251, 191, 36, 1)',
+        'rgba(20, 184, 166, 1)',
+        'rgba(162, 28, 175, 1)'
+      ],
+      borderWidth: 2,
+      hoverOffset: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#697a8d',
+          font: {
+            size: 11
+          },
+          usePointStyle: true,
+          padding: 15
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#696cff',
+        borderWidth: 1,
+        cornerRadius: 8
+      }
+    }
+  }
+});
+
+// Quick Actions Functions
+function generateReport() {
+  // Implementation for report generation
+  alert('Report generation feature coming soon!');
+}
+
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+  // Set current date
+  const currentDate = new Date();
+  const dateOptions = { year: 'numeric', month: 'short', day: '2-digit' };
+  document.getElementById('current-date').textContent = currentDate.toLocaleDateString('en-US', dateOptions);
+  
+  // Animate cards on load
+  const cards = document.querySelectorAll('.card');
+  cards.forEach((card, index) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      card.style.transition = 'all 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, index * 100);
+  });
+});
+</script>
+
+<style>
+/* Timeline Styling */
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e9ecef;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -22px;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid #696cff;
+}
+
+.timeline-content h6 {
+  color: #566a7f;
+  margin-bottom: 0.5rem;
+}
+
+/* Card Enhancements */
+.card {
+  border: none;
+  box-shadow: 0 0.25rem 1.125rem rgba(75, 70, 92, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 2rem rgba(75, 70, 92, 0.15);
+}
+
+.card-header {
+  background: #fff;
+  border-bottom: 1px solid #d9dee3;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Statistics Cards */
+.card-info p {
+  color: #697a8d;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-info h4 {
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.card-icon .badge {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button Enhancements */
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Welcome Card */
+.bg-primary {
+  background: linear-gradient(135deg, #696cff 0%, #5f62e6 100%) !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .timeline {
+    padding-left: 20px;
+  }
+  
+  .timeline-marker {
+    left: -15px;
+    width: 10px;
+    height: 10px;
+  }
+  
+  .display-6 {
+    font-size: 1.5rem;
+  }
+}
+</style>
+{% endblock %}
