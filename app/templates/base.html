@@ -315,10 +315,15 @@
           <div class="menu-inner-shadow"></div>
           <ul class="menu-inner py-1">
             <li class="menu-item"><a href="/dashboard" class="menu-link"><i class="menu-icon tf-icons bx bx-home-circle"></i><div>Dashboard</div></a></li>
-            <li class="menu-item"><a href="/pr_table" class="menu-link"><i class="menu-icon tf-icons bx bx-edit"></i><div>New PR</div></a></li>
-            <li class="menu-item"><a href="/pr_table" class="menu-link"><i class="menu-icon tf-icons bx bx-table"></i><div>View PRs</div></a></li>
+            <!-- <li class="menu-item"><a href="/pr_table" class="menu-link"><i class="menu-icon tf-icons bx bx-edit"></i><div>New PR</div></a></li> -->
+            <li class="menu-item"><a href="/pr_table" class="menu-link"><i class="menu-icon tf-icons bx bx-table"></i><div>New PRs</div></a></li>
             <li class="menu-item"><a href="/users" class="menu-link"><i class="menu-icon tf-icons bx bx-user"></i><div>Users</div></a></li>
+            <!-- <li class="menu-item"><a href="/admin/roles" class="menu-link"><i class="menu-icon tf-icons bx bx-shield"></i><div>Roles</div></a></li> -->
+            <!-- <li class="menu-item"><a href="/admin/permissions" class="menu-link"><i class="menu-icon tf-icons bx bx-key"></i><div>Permissions</div></a></li> -->
+            <!-- <li class="menu-item"><a href="/admin/user_roles" class="menu-link"><i class="menu-icon tf-icons bx bx-user-check"></i><div>User Roles</div></a></li> -->
             <li class="menu-item"><a href="/vendors" class="menu-link"><i class="menu-icon tf-icons bx bx-store"></i><div>Vendors</div></a></li>
+            <li class="menu-item"><a href="/legal_entities" class="menu-link"><i class="menu-icon tf-icons bx bx-building"></i><div>Legal Entities</div></a></li>
+            <li class="menu-item"><a href="/approved_items" class="menu-link"><i class="menu-icon tf-icons bx bx-list-check"></i><div>Approved Items</div></a></li>
             <li class="menu-item"><a href="/logout" class="menu-link"><i class="menu-icon tf-icons bx bx-log-out"></i><div>Logout</div></a></li>
           </ul>
         </aside>
@@ -337,5 +342,178 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     {% block scripts %}{% endblock %}
+    <!-- Chatbase Chatbot Script -->
+<!-- Simple AI Chatbot Widget -->
+<style>
+#ai-chatbot-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 9999;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#ai-chatbot-btn:hover { background: #1d4ed8; }
+#ai-chatbot-modal {
+  display: none;
+  position: fixed;
+  bottom: 100px;
+  right: 32px;
+  width: 340px;
+  max-width: 95vw;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 10000;
+  flex-direction: column;
+  overflow: hidden;
+}
+#ai-chatbot-header {
+  background: #2563eb;
+  color: #fff;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#ai-chatbot-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+#ai-chatbot-messages {
+  padding: 16px;
+  height: 260px;
+  overflow-y: auto;
+  background: #f8fafc;
+  font-size: 15px;
+}
+#ai-chatbot-input-row {
+  display: flex;
+  border-top: 1px solid #e5e7eb;
+  background: #f1f5f9;
+}
+#ai-chatbot-input {
+  flex: 1;
+  border: none;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 0 0 0 16px;
+  outline: none;
+  background: #f1f5f9;
+}
+#ai-chatbot-send {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0 18px;
+  font-size: 18px;
+  border-radius: 0 0 16px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#ai-chatbot-send:hover { background: #1d4ed8; }
+.ai-chatbot-msg-user { text-align: right; margin-bottom: 8px; }
+.ai-chatbot-msg-bot { text-align: left; margin-bottom: 8px; }
+.ai-chatbot-msg-bot span { background: #e0e7ff; color: #1e293b; padding: 6px 12px; border-radius: 12px 12px 12px 0; display: inline-block; }
+.ai-chatbot-msg-user span { background: #2563eb; color: #fff; padding: 6px 12px; border-radius: 12px 12px 0 12px; display: inline-block; }
+</style>
+<button id="ai-chatbot-btn" title="Ask AI Assistant">💬</button>
+<div id="ai-chatbot-modal">
+  <div id="ai-chatbot-header">
+    Procurement AI Assistant
+    <button id="ai-chatbot-close" title="Close">&times;</button>
+  </div>
+  <div id="ai-chatbot-messages"></div>
+  <div id="ai-chatbot-input-row">
+    <input id="ai-chatbot-input" type="text" placeholder="Ask about procurement compliance..." autocomplete="off" />
+    <button id="ai-chatbot-send">➤</button>
+  </div>
+</div>
+<script>
+(function() {
+  const btn = document.getElementById('ai-chatbot-btn');
+  const modal = document.getElementById('ai-chatbot-modal');
+  const close = document.getElementById('ai-chatbot-close');
+  const messages = document.getElementById('ai-chatbot-messages');
+  const input = document.getElementById('ai-chatbot-input');
+  const send = document.getElementById('ai-chatbot-send');
+  let greeted = false;
+
+  function appendMsg(text, sender, typing=false) {
+    const div = document.createElement('div');
+    div.className = sender === 'user' ? 'ai-chatbot-msg-user' : 'ai-chatbot-msg-bot';
+    const span = document.createElement('span');
+    if (typing) {
+      span.textContent = '';
+      div.appendChild(span);
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      let i = 0;
+      function typeChar() {
+        if (i < text.length) {
+          span.textContent += text.charAt(i);
+          i++;
+          setTimeout(typeChar, 18 + Math.random()*30);
+        }
+      }
+      typeChar();
+    } else {
+      span.textContent = text;
+      div.appendChild(span);
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
+
+  function sendMsg() {
+    const q = input.value.trim();
+    if (!q) return;
+    appendMsg(q, 'user');
+    input.value = '';
+    appendMsg('...', 'bot');
+    fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    })
+    .then(r => r.json())
+    .then(data => {
+      // Remove the '...' placeholder
+      const lastBot = messages.querySelector('.ai-chatbot-msg-bot:last-child');
+      if (lastBot && lastBot.textContent === '...') lastBot.remove();
+      appendMsg(data.answer, 'bot', true);
+    })
+    .catch(() => {
+      const lastBot = messages.querySelector('.ai-chatbot-msg-bot:last-child');
+      if (lastBot && lastBot.textContent === '...') lastBot.remove();
+      appendMsg('Sorry, there was an error contacting the assistant.', 'bot', true);
+    });
+  }
+
+  btn.onclick = function() {
+    modal.style.display = 'flex';
+    input.focus();
+    if (!greeted) {
+      appendMsg('👋 Hi! I am your Procurement Compliance AI Assistant. How can I help you today?', 'bot', true);
+      greeted = true;
+    }
+  };
+  close.onclick = function() { modal.style.display = 'none'; };
+  send.onclick = sendMsg;
+  input.onkeydown = function(e) { if (e.key === 'Enter') sendMsg(); };
+})();
+</script>
 </body>
-</html>
+</html> 

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+{% if success %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+{% if error %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+<div class="row justify-content-center">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Approved Items</h4>
+        <button id="addApprovedItemBtn" class="btn btn-primary">+ Add Approved Item</button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="approvedItemsTable" class="table table-striped table-hover" style="width:100%;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in approved_items %}
+              <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.name }}</td>
+                <td>
+                  <button class="btn btn-icon btn-outline-info btn-sm" title="Edit Approved Item" data-bs-toggle="modal" data-bs-target="#editApprovedItemModal{{ item.id }}">
+                    <i class="bx bx-edit"></i>
+                  </button>
+                  <form method="post" action="/delete_approved_item/{{ item.id }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this item?');">
+                    <button type="submit" title="Delete Approved Item" class="btn btn-icon btn-outline-danger btn-sm">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </form>
+                  <!-- Edit Approved Item Modal -->
+                  <div class="modal fade" id="editApprovedItemModal{{ item.id }}" tabindex="-1" aria-labelledby="editApprovedItemModalLabel{{ item.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="editApprovedItemModalLabel{{ item.id }}">Edit Approved Item</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="post" action="/edit_approved_item/{{ item.id }}">
+                          <div class="modal-body">
+                            <div class="mb-3">
+                              <label for="edit-approved-item-name-{{ item.id }}" class="form-label">Name</label>
+                              <input id="edit-approved-item-name-{{ item.id }}" type="text" name="name" class="form-control" required value="{{ item.name }}">
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Add Approved Item Modal -->
+<div class="modal fade" id="addApprovedItemModal" tabindex="-1" aria-labelledby="addApprovedItemModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addApprovedItemModalLabel">Add New Approved Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addApprovedItemForm" method="post" action="/add_approved_item">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="approved-item-name" class="form-label">Name</label>
+            <input id="approved-item-name" type="text" name="name" class="form-control" required placeholder="Approved Item Name">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Approved Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function() {
+  $('#approvedItemsTable').DataTable({
+    responsive: true,
+    paging: true,
+    searching: true,
+    info: true,
+    pageLength: 10,
+    lengthMenu: [5, 10, 25, 50, 100],
+    dom: 'Bfrtip',
+    buttons: [
+      'copy', 'csv', 'excel', 'pdf', 'print', 'colvis'
+    ]
+  });
+  // Modal logic using Bootstrap 5
+  $('#addApprovedItemBtn').on('click', function() {
+    var modal = new bootstrap.Modal(document.getElementById('addApprovedItemModal'));
+    modal.show();
+  });
+});
+</script>
+{% endblock %}

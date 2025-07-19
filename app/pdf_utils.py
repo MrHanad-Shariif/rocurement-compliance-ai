@@ -96,11 +96,19 @@ def generate_multilingual_rfq_pdf(legal_entity_id: int, item_types: List[str],
     # Add page
     pdf.add_page()
     
-    # Add Simad University logo at the top
-    logo_path = "app/static/img/simad_logo.png"
-    if os.path.exists(logo_path):
-        pdf.image(logo_path, x=85, y=10, w=40)
-        pdf.ln(30)
+    # Add Simad University logo at the top (skip for now)
+    # logo_path = "app/static/img/simad_logo.png"
+    # try:
+    #     if os.path.exists(logo_path):
+    #         pdf.image(logo_path, x=85, y=10, w=40)
+    #         pdf.ln(30)
+    # except Exception as e:
+    #     # If logo fails to load, just continue without it
+    #     print(f"Warning: Could not load logo: {e}")
+    #     pdf.ln(30)
+    
+    # Skip logo for now and add some spacing
+    pdf.ln(30)
     
     # Set font for RTL languages (Arabic)
     if language == "ar":
@@ -240,11 +248,19 @@ def generate_rfp_pdf(legal_entity_id: int, item_types: List[str],
     # Add page
     pdf.add_page()
     
-    # Add Simad University logo at the top
-    logo_path = "app/static/img/simad_logo.png"
-    if os.path.exists(logo_path):
-        pdf.image(logo_path, x=85, y=10, w=40)
-        pdf.ln(30)
+    # Add Simad University logo at the top (skip for now)
+    # logo_path = "app/static/img/simad_logo.png"
+    # try:
+    #     if os.path.exists(logo_path):
+    #         pdf.image(logo_path, x=85, y=10, w=40)
+    #         pdf.ln(30)
+    # except Exception as e:
+    #     # If logo fails to load, just continue without it
+    #     print(f"Warning: Could not load logo: {e}")
+    #     pdf.ln(30)
+    
+    # Skip logo for now and add some spacing
+    pdf.ln(30)
     
     # Header
     pdf.set_font_safe("DejaVu", 'B', 18)

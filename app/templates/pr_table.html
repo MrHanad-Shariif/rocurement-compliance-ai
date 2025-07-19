@@ -85,10 +85,10 @@
                       <i class="bx bx-file"></i>
               </button>
                     <ul class="dropdown-menu">
-                      <li><a class="dropdown-item" href="#" onclick="generateRFQ({{ pr[0] if pr[0] is defined else pr.id }})">
+                      <li><a class="dropdown-item" href="#" onclick="generateRFQ({{ pr[1] if pr[1] is defined else pr.legal_entity_id }})">
                         <i class="bx bx-download me-2"></i>Generate RFQ
                       </a></li>
-                      <li><a class="dropdown-item" href="#" onclick="generateRFP({{ pr[0] if pr[0] is defined else pr.id }})">
+                      <li><a class="dropdown-item" href="#" onclick="generateRFP({{ pr[1] if pr[1] is defined else pr.legal_entity_id }})">
                         <i class="bx bx-file-plus me-2"></i>Generate RFP
                       </a></li>
                       <li><a class="dropdown-item" href="#" onclick="notifyVendors({{ pr[0] if pr[0] is defined else pr.id }})">
@@ -128,16 +128,22 @@
           <div id="add-pr-error" class="alert alert-danger" style="display:none;"></div>
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label">Legal Entity ID</label>
-              <input type="number" name="legal_entity_id" class="form-control" required>
+              <label class="form-label">Legal Entity</label>
+              <select name="legal_entity_id" class="form-select" required>
+                {% for entity in legal_entities %}
+                  <option value="{{ entity.id }}">{{ entity.name }} ({{ entity.code }})</option>
+                {% endfor %}
+              </select>
             </div>
             <div class="col-md-8">
               <label class="form-label" for="vendor-select-modal">Select Vendors</label>
               <select id="vendor-select-modal" name="vendor_ids" class="form-select" multiple required style="min-height:80px;">
+                <option></option>
                 {% for vendor in vendors %}
                   <option value="{{ vendor[0] }}">{{ vendor[1] }} ({{ vendor[2] }}, {{ vendor[3]|capitalize }})</option>
                 {% endfor %}
               </select>
+              <small class="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple vendors, or use the dropdown.</small>
             </div>
           </div>
           <div id="modal-items">
@@ -145,9 +151,9 @@
               <div class="col-md-3">
                 <label class="form-label">Item Type</label>
                 <select name="item_type" class="form-select" required>
-                  <option value="Laptop">Laptop</option>
-                  <option value="Chair">Chair</option>
-                  <option value="Printer">Printer</option>
+                  {% for item in approved_items %}
+                    <option value="{{ item.name }}">{{ item.name }}</option>
+                  {% endfor %}
                 </select>
               </div>
               <div class="col-md-5">
@@ -281,11 +287,12 @@
           <div class="mb-3">
             <label class="form-label">Select Vendors to Notify</label>
             <select name="vendor_ids" class="form-select vendor-search" multiple required style="min-height:100px;">
+              <option></option>
               {% for vendor in vendors %}
                 <option value="{{ vendor[0] }}">{{ vendor[1] }} ({{ vendor[2] }}, {{ vendor[3]|capitalize }})</option>
               {% endfor %}
             </select>
-            <small class="text-muted">Vendors will receive notifications in their preferred language</small>
+            <small class="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple vendors, or use the dropdown.</small>
           </div>
           
           <div class="alert alert-info">
@@ -324,11 +331,12 @@
           <div class="mb-3">
             <label class="form-label">Select Vendors to Notify</label>
             <select name="vendor_ids" class="form-select" multiple required style="min-height:100px;">
+              <option></option>
               {% for vendor in vendors %}
                 <option value="{{ vendor[0] }}">{{ vendor[1] }} ({{ vendor[2] }}, {{ vendor[3]|capitalize }})</option>
               {% endfor %}
             </select>
-            <small class="text-muted">Notifications will be sent in each vendor's preferred language</small>
+            <small class="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple vendors, or use the dropdown.</small>
           </div>
           
           <div class="alert alert-warning">
@@ -357,16 +365,19 @@
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
-  <script>
-    $(document).ready(function() {
-      if ($('#prTable').length) {
-        $('#prTable').DataTable({
-          responsive: true,
-          paging: true,
-          searching: true,
-          info: true,
-          pageLength: 10,
-          lengthMenu: [5, 10, 25, 50, 100],
+<!-- Select2 CSS/JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    if ($('#prTable').length) {
+      $('#prTable').DataTable({
+        responsive: true,
+        paging: true,
+        searching: true,
+        info: true,
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
         order: [[1, 'desc']],
         dom: 'Bfrtip',
         buttons: [
@@ -385,23 +396,19 @@
         }
       });
     }
-    
     // Modal logic for Add PR
     $('#addPrBtn').on('click', function() {
       var modal = new bootstrap.Modal(document.getElementById('addPrModal'));
       modal.show();
     });
-    
     // Checkbox functionality
     $('#selectAll').on('change', function() {
       $('.pr-checkbox').prop('checked', this.checked);
       updateBulkNotifyButton();
     });
-    
     $('.pr-checkbox').on('change', function() {
       updateBulkNotifyButton();
     });
-    
     function updateBulkNotifyButton() {
       const checkedBoxes = $('.pr-checkbox:checked');
       if (checkedBoxes.length > 0) {
@@ -410,7 +417,6 @@
         $('#bulkNotifyBtn').hide();
       }
     }
-    
     // Bulk notify button
     $('#bulkNotifyBtn').on('click', function() {
       const checkedBoxes = $('.pr-checkbox:checked');
@@ -423,8 +429,32 @@
         alert('Please select exactly one PR for bulk notification.');
       }
     });
+    // Re-initialize Select2 for vendor dropdowns only when modals are shown, with dropdownParent set
+    $('#addPrModal').on('shown.bs.modal', function () {
+      $('#vendor-select-modal').select2({
+        width: '100%',
+        dropdownParent: $('#addPrModal'),
+        placeholder: 'Select one or more vendors',
+        allowClear: true
+      });
+    });
+    $('#generateNotifyModal').on('shown.bs.modal', function () {
+      $('.vendor-search').select2({
+        width: '100%',
+        dropdownParent: $('#generateNotifyModal'),
+        placeholder: 'Select one or more vendors',
+        allowClear: true
+      });
+    });
+    $('#bulkNotifyModal').on('shown.bs.modal', function () {
+      $('select[name="vendor_ids"]').not('.vendor-search, #vendor-select-modal').select2({
+        width: '100%',
+        dropdownParent: $('#bulkNotifyModal'),
+        placeholder: 'Select one or more vendors',
+        allowClear: true
+      });
+    });
   });
-  
   // Modal item logic for Add PR
   function addModalItemBlock() {
     const container = document.getElementById("modal-items");
@@ -434,9 +464,9 @@
       <div class="col-md-3">
         <label class="form-label">Item Type</label>
         <select name="item_type" class="form-select" required>
-          <option value="Laptop">Laptop</option>
-          <option value="Chair">Chair</option>
-          <option value="Printer">Printer</option>
+          {% for item in approved_items %}
+            <option value="{{ item.name }}">{{ item.name }}</option>
+          {% endfor %}
         </select>
       </div>
       <div class="col-md-5">
@@ -454,13 +484,11 @@
     container.appendChild(itemBlock);
     updateModalRemoveButtons();
   }
-  
   function removeModalItemBlock(btn) {
     const itemBlock = btn.closest('.item-block');
     if (itemBlock) itemBlock.remove();
     updateModalRemoveButtons();
   }
-  
   function updateModalRemoveButtons() {
     const blocks = document.querySelectorAll('#modal-items .item-block');
     blocks.forEach((block, idx) => {
@@ -468,45 +496,38 @@
       if (btn) btn.style.display = (blocks.length > 1) ? 'inline-block' : 'none';
     });
   }
-  
   // Generate and notify functions
   function generateRFQ(prId) {
     // For now, redirect to the existing generate_rfq endpoint
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/generate_rfq';
-    
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = 'legal_entity_id';
     input.value = prId;
-    
     form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
   }
-  
   function generateRFP(prId) {
     // Show the generate and notify modal
     $('#modal-legal-entity').val(prId);
     $('#modal-item-type').val('Laptop'); // Default values
     $('#modal-description').val('Standard Laptop');
     $('#modal-quantity').val(1);
-    
     var modal = new bootstrap.Modal(document.getElementById('generateNotifyModal'));
     modal.show();
   }
-  
   function notifyVendors(prId) {
     $('#bulk-pr-id').val(prId);
     var modal = new bootstrap.Modal(document.getElementById('bulkNotifyModal'));
     modal.show();
   }
-  
   window.onload = function() {
     updateModalRemoveButtons();
   };
-  </script>
+</script>
   <!-- --- Workflow Animation Logic for Add PR Modal --- -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -586,13 +607,13 @@
           e.preventDefault();
           addPrError.style.display = 'none';
           // Validate required fields
-          const legalEntity = addPrForm.querySelector('input[name="legal_entity_id"]');
+          const legalEntity = addPrForm.querySelector('select[name="legal_entity_id"]');
           const vendorSelect = addPrForm.querySelector('select[name="vendor_ids"]');
           const itemType = addPrForm.querySelector('select[name="item_type"]');
           const description = addPrForm.querySelector('input[name="description"]');
           const quantity = addPrForm.querySelector('input[name="quantity"]');
           let errorMsg = '';
-          if (!legalEntity.value) errorMsg = 'Legal Entity ID is required.';
+          if (!legalEntity.value) errorMsg = 'Legal Entity is required.';
           else if (!vendorSelect.value) errorMsg = 'At least one vendor must be selected.';
           else if (!itemType.value) errorMsg = 'Item Type is required.';
           else if (!description.value) errorMsg = 'Description is required.';

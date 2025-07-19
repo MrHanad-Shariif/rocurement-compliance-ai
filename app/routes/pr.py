@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Request, Form, Path, HTTPException
+from fastapi import APIRouter, Request, Form, Path, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import os
-from app.db import get_db
+from app.db import get_psycopg2_conn, get_db
 from app.auth import check_login
 from app.ai_agent import validate_legal_entity, validate_quantity_item, validate_description
 from app.pdf_utils import generate_rfq_pdf, generate_multilingual_rfq_pdf, generate_rfp_pdf
 from app.email_utils import email_notifier
+from app.models.legal_entity import LegalEntity
+from app.models.approved_item import ApprovedItem
+from sqlalchemy.orm import Session
 import json
 
 router = APIRouter()
@@ -15,13 +18,13 @@ templates = Jinja2Templates(directory="app/templates")
 # Remove the /pr_form route and any references to pr_form.html
 
 @router.post("/validate", response_class=HTMLResponse)
-async def validate_pr(request: Request):
+async def validate_pr(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
-    legal_entity_id = int(form["legal_entity_id"])
-    vendor_ids = form.getlist("vendor_ids")
-    item_type = form.getlist("item_type")
-    description = form.getlist("description")
-    quantity_strs = form.getlist("quantity")
+    legal_entity_id = int(str(form["legal_entity_id"]))
+    vendor_ids = [str(vid) for vid in form.getlist("vendor_ids")]
+    item_type = [str(item) for item in form.getlist("item_type")]
+    description = [str(desc) for desc in form.getlist("description")]
+    quantity_strs = [str(q) for q in form.getlist("quantity")]
     quantity = [int(q) for q in quantity_strs]
 
     auth_check = check_login(request)
@@ -29,7 +32,7 @@ async def validate_pr(request: Request):
         return auth_check
 
     results = []
-    valid, msg = validate_legal_entity(legal_entity_id)
+    valid, msg = validate_legal_entity(db, legal_entity_id)
     results.append(msg)
     if not valid:
         # Redirect back to PR table with error message
@@ -43,14 +46,14 @@ async def validate_pr(request: Request):
             # Redirect back to PR table with error message
             response = RedirectResponse(url="/pr_table?error=" + msg.replace(" ", "%20"), status_code=302)
             return response
-        valid, msg = validate_description(description[i])
+        valid, msg = validate_description(db, description[i])
         results.append(msg)
         if not valid:
             # Redirect back to PR table with error message
             response = RedirectResponse(url="/pr_table?error=" + msg.replace(" ", "%20"), status_code=302)
             return response
 
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     for i in range(len(item_type)):
         cur.execute(
@@ -67,11 +70,12 @@ async def validate_pr(request: Request):
     return response
 
 @router.get("/pr_table", response_class=HTMLResponse)
-async def pr_table(request: Request):
+async def pr_table(request: Request, db: Session = Depends(get_db)):
     auth_check = check_login(request)
     if auth_check:
         return auth_check
-    conn = get_db()
+    # Fetch PRs and vendors using psycopg2
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT * FROM validations")
     prs = cur.fetchall()
@@ -80,8 +84,11 @@ async def pr_table(request: Request):
     cur.close()
     conn.close()
 
+    # Fetch legal entities and approved items using ORM
+    legal_entities = db.query(LegalEntity).all()
+    approved_items = db.query(ApprovedItem).all()
+
     # Check if email is configured
-    import os
     email_configured = all([
         os.getenv("SMTP_SERVER"),
         os.getenv("SMTP_PORT"),
@@ -109,7 +116,9 @@ async def pr_table(request: Request):
         "title": "PR Table",
         "prs": prs,
         "vendors": vendors,
-        "email_configured": email_configured
+        "email_configured": email_configured,
+        "legal_entities": legal_entities,
+        "approved_items": approved_items
     })
 
 @router.get("/edit_pr/{pr_id}", response_class=HTMLResponse)
@@ -117,7 +126,7 @@ async def edit_pr_get(request: Request, pr_id: int = Path(...)):
     auth_check = check_login(request)
     if auth_check:
         return auth_check
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, legal_entity_id, item_type, description, quantity FROM validations WHERE id=%s", (pr_id,))
     pr = cur.fetchone()
@@ -132,7 +141,7 @@ async def edit_pr_post(request: Request, pr_id: int = Path(...), legal_entity_id
     auth_check = check_login(request)
     if auth_check:
         return auth_check
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("UPDATE validations SET legal_entity_id=%s, item_type=%s, description=%s, quantity=%s WHERE id=%s", (legal_entity_id, item_type, description, quantity, pr_id))
     conn.commit()
@@ -145,7 +154,7 @@ async def delete_pr(request: Request, pr_id: int = Path(...)):
     auth_check = check_login(request)
     if auth_check:
         return auth_check
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM validations WHERE id=%s", (pr_id,))
     conn.commit()
@@ -156,116 +165,168 @@ async def delete_pr(request: Request, pr_id: int = Path(...)):
 @router.post("/generate_rfq", response_class=HTMLResponse)
 async def generate_rfq(request: Request):
     form = await request.form()
-    legal_entity_id = int(form["legal_entity_id"])
-    item_type = form.getlist("item_type")
-    description = form.getlist("description")
-    quantity_strs = form.getlist("quantity")
-    quantity = [int(q) for q in quantity_strs]
+    legal_entity_id = int(str(form["legal_entity_id"]))
+    
     auth_check = check_login(request)
     if auth_check:
         return auth_check
-    pdf_path = generate_rfq_pdf(legal_entity_id, item_type, description, quantity)
-    conn = get_db()
+    
+    # Fetch PR data from database using legal_entity_id
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
-    cur.execute("UPDATE validations SET rfq_file=%s WHERE legal_entity_id=%s", (pdf_path, legal_entity_id))
-    conn.commit()
+    cur.execute("SELECT item_type, description, quantity FROM validations WHERE legal_entity_id=%s", (legal_entity_id,))
+    pr_data = cur.fetchall()
     cur.close()
     conn.close()
-    msg = f"✅ RFQ generated: <a href='/download/{pdf_path}' target='_blank'>Download RFQ PDF</a>"
-    # Redirect back to PR table with success message
-    success_msg = f"RFQ for Legal Entity {legal_entity_id} generated successfully!"
-    response = RedirectResponse(url="/pr_table?success=" + success_msg.replace(" ", "%20"), status_code=302)
-    return response
+    
+    if not pr_data:
+        error_msg = f"❌ No PR found for Legal Entity {legal_entity_id}"
+        response = RedirectResponse(url="/pr_table?error=" + error_msg.replace(" ", "%20"), status_code=302)
+        return response
+    
+    # Extract data for PDF generation
+    item_types = [row[0] for row in pr_data]
+    descriptions = [row[1] for row in pr_data]
+    quantities = [row[2] for row in pr_data]
+    
+    try:
+        pdf_path = generate_rfq_pdf(legal_entity_id, item_types, descriptions, quantities)
+        
+        # Update database with PDF path
+        conn = get_psycopg2_conn()
+        cur = conn.cursor()
+        cur.execute("UPDATE validations SET rfq_file=%s WHERE legal_entity_id=%s", (pdf_path, legal_entity_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        success_msg = f"RFQ for Legal Entity {legal_entity_id} generated successfully!"
+        response = RedirectResponse(url="/pr_table?success=" + success_msg.replace(" ", "%20"), status_code=302)
+        return response
+        
+    except Exception as e:
+        error_msg = f"❌ Error generating RFQ: {str(e)}"
+        response = RedirectResponse(url="/pr_table?error=" + error_msg.replace(" ", "%20"), status_code=302)
+        return response
 
 @router.post("/generate_and_notify", response_class=HTMLResponse)
 async def generate_and_notify(request: Request):
     """Generate multilingual RFQ/RFP and send notifications to vendors"""
     form = await request.form()
-    legal_entity_id = int(form["legal_entity_id"])
-    item_type = form.getlist("item_type")
-    description = form.getlist("description")
-    quantity_strs = form.getlist("quantity")
-    quantity = [int(q) for q in quantity_strs]
-    vendor_ids = form.getlist("vendor_ids")
-    document_type = form.get("document_type", "rfq")  # rfq or rfp
-    language = form.get("language", "en")
+    legal_entity_id = int(str(form["legal_entity_id"]))
+    vendor_ids = [str(vid) for vid in form.getlist("vendor_ids")]
+    document_type = str(form.get("document_type", "rfq"))  # rfq or rfp
+    language = str(form.get("language", "en"))
+    
     # Ensure data directory exists
     os.makedirs("data/private_pdfs", exist_ok=True)
+    
     auth_check = check_login(request)
     if auth_check:
         return auth_check
+    
+    # Fetch PR data from database using legal_entity_id
+    conn = get_psycopg2_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT item_type, description, quantity FROM validations WHERE legal_entity_id=%s", (legal_entity_id,))
+    pr_data = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    if not pr_data:
+        error_msg = f"❌ No PR found for Legal Entity {legal_entity_id}"
+        response = RedirectResponse(url="/pr_table?error=" + error_msg.replace(" ", "%20"), status_code=302)
+        return response
+    
+    # Extract data for PDF generation
+    item_types = [row[0] for row in pr_data]
+    descriptions = [row[1] for row in pr_data]
+    quantities = [row[2] for row in pr_data]
+    
     # Get vendor information
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     vendor_ids_int = [int(vid) for vid in vendor_ids]
     cur.execute("SELECT id, name, email, language FROM vendors WHERE id = ANY(%s)", (vendor_ids_int,))
     vendors = cur.fetchall()
     cur.close()
     conn.close()
+    
     pdf_files = {}
     notification_results = {}
-    for vendor in vendors:
-        vendor_id, vendor_name, vendor_email, vendor_language = vendor
-        # Use selected language from form
-        pdf_lang = language
-        if document_type == "rfp":
-            pdf_filename = generate_rfp_pdf(
-                legal_entity_id=legal_entity_id,
-                item_types=item_type,
-                descriptions=description,
-                quantities=quantity,
-                vendor_ids=','.join(vendor_ids),
-                language=pdf_lang
-            )
-        else:
-            pdf_filename = generate_multilingual_rfq_pdf(
-                legal_entity_id=legal_entity_id,
-                item_types=item_type,
-                descriptions=description,
-                quantities=quantity,
-                vendor_ids=','.join(vendor_ids),
-                language=pdf_lang
-            )
-        pdf_path = os.path.join("data/private_pdfs", pdf_filename)
-        pdf_files[pdf_lang] = pdf_path
-        for i in range(len(item_type)):
-            success = email_notifier.send_rfq_notification(
-                vendor_email=vendor_email,
-                vendor_name=vendor_name,
-                vendor_language=pdf_lang,
-                legal_entity_id=legal_entity_id,
-                item_type=item_type[i],
-                description=description[i],
-                quantity=quantity[i],
-                pdf_path=pdf_path
-            )
-            notification_results[f"{vendor_email}_{i}"] = success
-    conn = get_db()
-    cur = conn.cursor()
-    pdf_files_json = json.dumps(pdf_files)
-    cur.execute("UPDATE validations SET rfq_file=%s WHERE legal_entity_id=%s", (pdf_files_json, legal_entity_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    successful_notifications = sum(1 for result in notification_results.values() if result)
-    total_notifications = len(notification_results)
-    success_msg = f"{document_type.upper()} generated and {successful_notifications}/{total_notifications} notifications sent to vendors!"
-    response = RedirectResponse(url="/pr_table?success=" + success_msg.replace(" ", "%20"), status_code=302)
-    return response
+    
+    try:
+        for vendor in vendors:
+            vendor_id, vendor_name, vendor_email, vendor_language = vendor
+            # Use selected language from form
+            pdf_lang = language
+            if document_type == "rfp":
+                pdf_filename = generate_rfp_pdf(
+                    legal_entity_id=legal_entity_id,
+                    item_types=item_types,
+                    descriptions=descriptions,
+                    quantities=quantities,
+                    vendor_ids=','.join(vendor_ids),
+                    language=pdf_lang
+                )
+            else:
+                pdf_filename = generate_multilingual_rfq_pdf(
+                    legal_entity_id=legal_entity_id,
+                    item_types=item_types,
+                    descriptions=descriptions,
+                    quantities=quantities,
+                    vendor_ids=','.join(vendor_ids),
+                    language=pdf_lang
+                )
+            pdf_path = os.path.join("data/private_pdfs", pdf_filename)
+            pdf_files[pdf_lang] = pdf_path
+            
+            for i in range(len(item_types)):
+                success = email_notifier.send_rfq_notification(
+                    vendor_email=vendor_email,
+                    vendor_name=vendor_name,
+                    vendor_language=pdf_lang,
+                    legal_entity_id=legal_entity_id,
+                    item_type=item_types[i],
+                    description=descriptions[i],
+                    quantity=quantities[i],
+                    pdf_path=pdf_path
+                )
+                notification_results[f"{vendor_email}_{i}"] = success
+        
+        # Update database with PDF files
+        conn = get_psycopg2_conn()
+        cur = conn.cursor()
+        pdf_files_json = json.dumps(pdf_files)
+        cur.execute("UPDATE validations SET rfq_file=%s WHERE legal_entity_id=%s", (pdf_files_json, legal_entity_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        successful_notifications = sum(1 for result in notification_results.values() if result)
+        total_notifications = len(notification_results)
+        success_msg = f"{document_type.upper()} generated and {successful_notifications}/{total_notifications} notifications sent to vendors!"
+        response = RedirectResponse(url="/pr_table?success=" + success_msg.replace(" ", "%20"), status_code=302)
+        return response
+        
+    except Exception as e:
+        error_msg = f"❌ Error generating {document_type.upper()}: {str(e)}"
+        response = RedirectResponse(url="/pr_table?error=" + error_msg.replace(" ", "%20"), status_code=302)
+        return response
 
 @router.post("/bulk_notify_vendors", response_class=HTMLResponse)
 async def bulk_notify_vendors(request: Request):
     """Send notifications to multiple vendors for existing PR"""
     form = await request.form()
-    pr_id = int(form["pr_id"])
-    vendor_ids = form.getlist("vendor_ids")
+    pr_id = int(str(form["pr_id"]))
+    vendor_ids = [str(vid) for vid in form.getlist("vendor_ids")]
     
     auth_check = check_login(request)
     if auth_check:
         return auth_check
     
     # Get PR information
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT legal_entity_id, item_type, description, quantity FROM validations WHERE id=%s", (pr_id,))
     pr_data = cur.fetchone()

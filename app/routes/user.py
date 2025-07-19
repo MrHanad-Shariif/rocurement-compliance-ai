@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, Path
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from app.db import get_db
+from app.db import get_psycopg2_conn
 from app.auth import check_login, create_user
 
 router = APIRouter()
@@ -12,7 +12,7 @@ async def list_users(request: Request):
     auth_check = check_login(request, required_role="admin")
     if auth_check:
         return auth_check
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, username, role FROM users")
     users = cur.fetchall()
@@ -34,7 +34,7 @@ async def register_user(request: Request, username: str = Form(...), password: s
             success = f"User '{username}' registered successfully."
         else:
             error = "Username already exists."
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, username, role FROM users")
     users = cur.fetchall()
@@ -47,7 +47,7 @@ async def vendors_page(request: Request):
     auth_check = check_login(request, required_role="admin")
     if auth_check:
         return auth_check
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, language FROM vendors")
     vendors = cur.fetchall()
@@ -66,7 +66,7 @@ async def add_vendor(request: Request, name: str = Form(...), email: str = Form(
         error = "All fields are required."
     else:
         try:
-            conn = get_db()
+            conn = get_psycopg2_conn()
             cur = conn.cursor()
             cur.execute("INSERT INTO vendors (name, email, language) VALUES (%s, %s, %s)", (name, email, language))
             conn.commit()
@@ -78,7 +78,7 @@ async def add_vendor(request: Request, name: str = Form(...), email: str = Form(
             cur.close()
             conn.close()
     # Fetch updated vendor list
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, language FROM vendors")
     vendors = cur.fetchall()
@@ -94,7 +94,7 @@ async def edit_vendor(request: Request, vendor_id: int = Path(...), name: str = 
     error = None
     success = None
     try:
-        conn = get_db()
+        conn = get_psycopg2_conn()
         cur = conn.cursor()
         cur.execute("UPDATE vendors SET name=%s, email=%s, language=%s WHERE id=%s", (name, email, language, vendor_id))
         conn.commit()
@@ -106,7 +106,7 @@ async def edit_vendor(request: Request, vendor_id: int = Path(...), name: str = 
         cur.close()
         conn.close()
     # Fetch updated vendor list
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, language FROM vendors")
     vendors = cur.fetchall()
@@ -122,7 +122,7 @@ async def delete_vendor(request: Request, vendor_id: int = Path(...)):
     error = None
     success = None
     try:
-        conn = get_db()
+        conn = get_psycopg2_conn()
         cur = conn.cursor()
         cur.execute("DELETE FROM vendors WHERE id=%s", (vendor_id,))
         conn.commit()
@@ -134,7 +134,7 @@ async def delete_vendor(request: Request, vendor_id: int = Path(...)):
         cur.close()
         conn.close()
     # Fetch updated vendor list
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, language FROM vendors")
     vendors = cur.fetchall()

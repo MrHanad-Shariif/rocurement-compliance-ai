@@ -1,8 +1,24 @@
+import os
 import psycopg2
 import psycopg2.extras
-import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+# SQLAlchemy ORM setup
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:admin123@localhost/procurement_ai")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# --- Legacy psycopg2 connection and init_db for raw SQL support ---
+def get_psycopg2_conn():
     conn = psycopg2.connect(
         dbname=os.getenv("POSTGRES_DB", "procurement_ai"),
         user=os.getenv("POSTGRES_USER", "postgres"),
@@ -12,7 +28,7 @@ def get_db():
     return conn
 
 def init_db():
-    conn = get_db()
+    conn = get_psycopg2_conn()
     cursor = conn.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
