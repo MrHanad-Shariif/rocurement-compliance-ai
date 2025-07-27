@@ -13,7 +13,8 @@ A FastAPI application that validates Purchase Requisitions (PR) against complian
 ### 1. Clone the repository
 
 
-git clone https://github.com/MrHanad-Shariiif/rocurement-compliance-ai.git
+git clone https://github.com/MrHanad-Shariif/rocurement-compliance-ai.git
+
 cd procurement-compliance-ai/app
 
 ### 2. Create and activate a virtual environment (optional but recommended)
